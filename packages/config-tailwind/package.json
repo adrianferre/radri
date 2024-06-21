@@ -1,12 +1,12 @@
 {
-  "name": "@repo/tailwind-config",
+  "name": "@radri/tailwind-config",
   "version": "0.0.0",
   "private": true,
   "exports": {
     ".": "./tailwind.config.ts"
   },
   "devDependencies": {
-    "@repo/typescript-config": "*",
+    "@radri/typescript-config": "*",
     "tailwindcss": "^3.4.1"
   }
 }

@@ -5,10 +5,12 @@
     { "pattern": "packages/*/" }
   ],
   "cSpell.words": [
+    "Adri",
     "Adrián",
     "Ferré",
     "immer",
     "nextjs",
+    "Radri",
     "transpiling",
     "Turborepo",
     "zustand"

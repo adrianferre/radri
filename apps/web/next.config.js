@@ -2,5 +2,5 @@
 
 module.exports = {
   reactStrictMode: true,
-  transpilePackages: ["@repo/ui"],
+  transpilePackages: ["@radri/ui"],
 };

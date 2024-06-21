@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { FiltersProvider, useFilter } from "@repo/filters-provider";
+import { FiltersProvider, useFilter } from "@radri/filters";
 
 const SearchFilter = memo(() => {
   const [search, setSearch] = useFilter("search");

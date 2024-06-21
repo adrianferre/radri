@@ -10,8 +10,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/ui": "*",
-    "@repo/filters-provider": "*",
+    "@radri/ui": "*",
+    "@radri/filters": "*",
     "next": "^14.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -21,9 +21,9 @@
     "@mdx-js/react": "^3.0.1",
     "@next/eslint-plugin-next": "^14.2.3",
     "@next/mdx": "^14.2.4",
-    "@repo/eslint-config": "*",
-    "@repo/tailwind-config": "*",
-    "@repo/typescript-config": "*",
+    "@radri/eslint-config": "*",
+    "@radri/tailwind-config": "*",
+    "@radri/typescript-config": "*",
     "@types/mdx": "^2.0.13",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
