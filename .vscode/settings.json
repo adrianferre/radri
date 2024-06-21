@@ -1,0 +1,7 @@
+{
+  "eslint.workingDirectories": [
+    { "pattern": "apps/*/" },
+    { "pattern": "packages/*/" }
+  ],
+  "cSpell.words": ["Adrián", "Ferré", "nextjs", "transpiling", "Turborepo"]
+}

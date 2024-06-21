@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "vercel.turbo-vsc",
+    "meganrogge.template-string-converter",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "sysoev.vscode-open-in-github",
+    "dbaeumer.vscode-eslint",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}
