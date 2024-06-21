@@ -1,4 +1,4 @@
 "use client";
 
-export { FiltersProvider, useFilters } from "./FiltersProvider";
+export { FiltersProvider, useFilter } from "./FiltersProvider";
 export type { FiltersProviderProps } from "./FiltersProvider";

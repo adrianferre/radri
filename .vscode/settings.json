@@ -1,7 +1,17 @@
 {
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "eslint.workingDirectories": [
     { "pattern": "apps/*/" },
     { "pattern": "packages/*/" }
   ],
-  "cSpell.words": ["Adrián", "Ferré", "nextjs", "transpiling", "Turborepo"]
+  "cSpell.words": [
+    "Adrián",
+    "Ferré",
+    "immer",
+    "nextjs",
+    "transpiling",
+    "Turborepo",
+    "zustand"
+  ],
+  "editor.formatOnSave": true
 }

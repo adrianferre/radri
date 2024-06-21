@@ -1,18 +1,20 @@
 "use client";
 
 import { memo } from "react";
-import { FiltersProvider, useFilters } from "@repo/filters-provider";
+import { FiltersProvider, useFilter } from "@repo/filters-provider";
 
 const SearchFilter = memo(() => {
-  const { filters, setFilter } = useFilters();
+  const [search, setSearch] = useFilter("search");
 
   return (
     <div>
-      <pre>{JSON.stringify(filters, null, 2)}</pre>
+      {/* <pre>{JSON.stringify(filters, null, 2)}</pre> */}
       <input
         className="text-black"
-        onChange={(e) => setFilter("search", e.target.value)}
-        value={filters.search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+        }}
+        value={search}
       />
     </div>
   );
@@ -25,6 +27,7 @@ export default function Page(): JSX.Element {
     <FiltersProvider
       initialFilters={{
         search: "",
+        otherParam: "",
       }}
     >
       <main className="min-h-screen p-24">

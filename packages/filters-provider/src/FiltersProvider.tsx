@@ -1,23 +1,26 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { createContext, useContext, useRef } from "react";
-import { type StoreApi, type Mutate } from "zustand";
-import { shallow } from "zustand/shallow";
-import type {
-  ParsedQs,
-  IParseOptions,
-  IStringifyOptions,
-  BooleanOptional,
-} from "qs";
 import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
+import { type Mutate } from "zustand";
+import { shallow } from "zustand/shallow";
+import { useStoreWithEqualityFn } from "zustand/traditional";
+import type { ParsedQs } from "qs";
+import {
+  type FiltersStoreApi,
   type FiltersStore,
-  type FiltersStoreState,
   createFiltersStore,
 } from "./FiltersStore";
 import { useProxyStore } from "./useProxyStore";
 
-export const FiltersContext = createContext<FiltersStore | null>(null);
+export const FiltersContext = createContext<FiltersStoreApi | null>(null);
 
 export type FilterKey = string;
 
@@ -87,14 +90,6 @@ export type FiltersProviderProps = {
    */
   persistDebounce?: number;
   /**
-   * Options for the query string parser.
-   * */
-  parseOptions?: IParseOptions<BooleanOptional>;
-  /**
-   * Options for the query string stringify.
-   * */
-  stringifyOptions?: IStringifyOptions<BooleanOptional>;
-  /**
    * The children that will have access to the filters.
    * */
   children?: ReactNode | ReactNode[];
@@ -106,11 +101,9 @@ export function FiltersProvider({
   keepOtherQueryParams = true,
   localStorageKey = "__DEFAULT_LS_FILTERS_KEY__",
   persistDebounce = 300,
-  parseOptions = {},
-  stringifyOptions = {},
   children,
 }: FiltersProviderProps): JSX.Element {
-  const filtersStoreRef = useRef<FiltersStore>();
+  const filtersStoreRef = useRef<FiltersStoreApi>();
 
   if (!filtersStoreRef.current) {
     filtersStoreRef.current = createFiltersStore({
@@ -119,8 +112,6 @@ export function FiltersProvider({
       keepOtherQueryParams,
       localStorageKey,
       persistDebounce,
-      parseOptions,
-      stringifyOptions,
     });
   }
 
@@ -131,14 +122,57 @@ export function FiltersProvider({
   );
 }
 
-/**
- * This hook is used to access the filters store, and the update methods.
- * @returns The store object with a proxy to to only re-render when the used keys change.
- */
-export function useFilters(): Mutate<StoreApi<FiltersStoreState>, []> {
+function useFiltersStoreApi(): FiltersStoreApi {
   const store = useContext(FiltersContext);
 
   if (!store) throw new Error("Missing FiltersProvider in the tree");
 
+  return store;
+}
+
+/**
+ * This hook is used to access the filters store, and the update methods.
+ * @returns The store object with a proxy to to only re-render when the used keys change.
+ */
+export function useFilters(): Mutate<FiltersStoreApi, []> {
+  const store = useFiltersStoreApi();
+
   return useProxyStore(store, shallow);
+}
+
+export function useFilter<V extends FilterValue = string>(
+  filterKey: FilterKey,
+): [V, (value: V) => void] {
+  const store = useFiltersStoreApi();
+
+  useLayoutEffect(() => {
+    if (!(filterKey in store.getState().filters))
+      throw new Error(
+        `The "${filterKey.toString()}" key must be defined in the initialValues!`,
+      );
+  }, [filterKey, store]);
+
+  useEffect(() => {
+    store.getState()._subscribeUrlFiltersKey(filterKey);
+
+    return () => {
+      store.getState()._unSubscribeUrlFiltersKey(filterKey);
+    };
+  }, [filterKey, store]);
+
+  const selector = useCallback(
+    (state: FiltersStore) => state.filters[filterKey],
+    [filterKey],
+  );
+
+  const handleFilterChange = useCallback(
+    (value: V) => {
+      store.getState().setFilter(filterKey, value);
+    },
+    [filterKey, store],
+  );
+
+  const filterValue = useStoreWithEqualityFn(store, selector, shallow) as V;
+
+  return [filterValue, handleFilterChange];
 }

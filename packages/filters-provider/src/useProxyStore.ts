@@ -52,5 +52,9 @@ export function useProxyStore<
     [store, equalityFn, handler],
   );
 
-  return useSyncExternalStore(subscribe, () => proxyRef.current);
+  return useSyncExternalStore(
+    subscribe,
+    () => proxyRef.current,
+    () => proxyRef.current,
+  );
 }

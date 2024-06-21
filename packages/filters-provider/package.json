@@ -8,21 +8,18 @@
   },
   "author": "Adrián Ferré (adrian_c4@hotmail.com)",
   "license": "ISC",
-  "peerDependencies": {
-    "react": "^18.3.1"
-  },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/lodash-es": "^4.17.12",
     "@types/qs": "^6.9.15",
-    "@types/react": "^18.3.3",
+    "@types/react": ">=17",
     "immer": "^10.1.1",
     "lodash-es": "^4.17.21",
     "qs": "^6.12.1",
     "typescript": "^5.4.5",
     "zustand": "^4.5.2"
   },
-  "dependencies": {
-    "remove": "^0.1.5"
+  "peerDependencies": {
+    "react": ">=17"
   }
 }
