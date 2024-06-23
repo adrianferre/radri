@@ -4,7 +4,7 @@ This is a personal GitHub lab project to develop different packages that can hel
 
 ## Packages in this project
 
-1. Filters Provider
+1. [Filters](./packages/filters) a way to manage and persist global filters in your App easily.
 
 ---
 
