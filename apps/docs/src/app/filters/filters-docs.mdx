@@ -1,4 +1,5 @@
-import basicUsageExample from "./basic-usage.txt";
+import { BasicUsage } from "./basic-usage";
+import basicUsageCode from "./basic-usage.tsx?inline";
 import { Code } from "@radri/ui/docs";
 
 # Filters
@@ -11,6 +12,14 @@ import { Code } from "@radri/ui/docs";
 4. Persist in Local Storage and URL are done by using a debounce, so you don't loose animation frames when the filters change too fast.
 5. All the persist behaviour is exposed trhu configuration so you can easily change and addapt to different part of your application.
 
-## Basic usage
+## How to install
 
-<Code language="typescript">{basicUsageExample}</Code>
+```shell
+npm i @radri/filters
+```
+
+## Basic usage example
+
+<BasicUsage />
+
+<Code language="typescript">{basicUsageCode}</Code>

@@ -8,7 +8,8 @@ module.exports = withMDX({
   webpack: (config) => {
     // Add raw-loader for raw file imports
     config.module.rules.push({
-      test: /\.txt$/, // You can change this to match the file type you want to import
+      test: /\.tsx$/, // Matches any file with 'example' in its name
+      resourceQuery: /inline/,
       use: "raw-loader",
     });
 

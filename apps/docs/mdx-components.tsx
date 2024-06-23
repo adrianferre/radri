@@ -1,5 +1,5 @@
 import type { MDXComponents } from "mdx/types";
-// import { Code } from "@radri/ui/docs";
+import { Code } from "@radri/ui/docs";
 import { twMerge } from "tailwind-merge";
 
 // This file allows you to provide custom React components
@@ -25,9 +25,17 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         {children}
       </ol>
     ),
-    // code: ({ children, ...otherProps }) => (
-    //   <Code {...otherProps}>{children?.toString().trim() ?? ""}</Code>
-    // ),
+    code: ({ className, children, ...otherProps }) => (
+      <Code
+        language={
+          /language-(?<language>\w+)/.exec(className ?? "")?.groups?.language ??
+          "plaintext"
+        }
+        {...otherProps}
+      >
+        {children?.toString().trim() ?? ""}
+      </Code>
+    ),
     ...components,
   };
 }

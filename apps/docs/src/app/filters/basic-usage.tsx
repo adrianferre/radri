@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { FiltersProvider, useFilter } from "@radri/filters";
 
 const SearchFilter = memo(() => {
@@ -21,7 +21,13 @@ const SearchFilter = memo(() => {
 
 SearchFilter.displayName = "SearchFilter";
 
-export default function Page(): JSX.Element {
+const Filters = memo(({ children }: { children: ReactNode }) => (
+  <div>{children}</div>
+));
+
+Filters.displayName = "Filters";
+
+export function BasicUsage(): JSX.Element {
   return (
     <FiltersProvider
       initialFilters={{
@@ -29,10 +35,11 @@ export default function Page(): JSX.Element {
         otherParam: "",
       }}
     >
-      <main className="min-h-screen p-24">
-        <h1>Playground</h1>
-        <SearchFilter />
-      </main>
+      <div>
+        <Filters>
+          <SearchFilter />
+        </Filters>
+      </div>
     </FiltersProvider>
   );
 }
