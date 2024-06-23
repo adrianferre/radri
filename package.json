@@ -19,6 +19,7 @@
   "engines": {
     "node": ">=18"
   },
+  "name": "radri",
   "packageManager": "npm@10.2.4",
   "workspaces": [
     "apps/*",

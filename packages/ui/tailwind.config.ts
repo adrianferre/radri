@@ -7,4 +7,5 @@ const config: Pick<Config, "prefix" | "presets" | "content"> = {
   presets: [sharedConfig],
 };
 
+// eslint-disable-next-line import/no-default-export -- This is required in Tailwind Config to work
 export default config;

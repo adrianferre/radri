@@ -8,12 +8,21 @@
     "Adri",
     "Adrián",
     "Ferré",
+    "fira",
+    "fontawesome",
+    "fortawesome",
     "immer",
+    "markdoc",
     "nextjs",
     "Radri",
+    "stylesheet",
+    "tailwindcss",
     "transpiling",
     "Turborepo",
     "zustand"
   ],
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "*.css": "tailwindcss"
+  }
 }
