@@ -166,14 +166,12 @@ const persistentStorage = ({
         }
       }
 
-      if (typeof window !== "undefined") {
-        const queryFilters = keepOtherQueryParams ? getQueryFilters() : {};
+      const queryFilters = keepOtherQueryParams ? getQueryFilters() : {};
 
-        setQueryFilters({
-          ...queryFilters,
-          ...newQueryFilters,
-        });
-      }
+      setQueryFilters({
+        ...queryFilters,
+        ...newQueryFilters,
+      });
     },
     persistDebounce
   ),

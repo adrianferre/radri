@@ -108,37 +108,39 @@ export type FiltersProviderProps = {
 };
 
 function setQueryFiltersToUrl(filters: Filters): void {
-  const urlFiltersStringified = stringify(filters, {
-    encode: false,
-    allowDots: true,
-    arrayFormat: "comma",
-    addQueryPrefix: true,
-    filter: (_, value: FilterValue) => {
-      if (value === undefined) {
-        return;
-      }
+  if (typeof window !== "undefined") {
+    const urlFiltersStringified = stringify(filters, {
+      encode: false,
+      allowDots: true,
+      arrayFormat: "comma",
+      addQueryPrefix: true,
+      filter: (_, value: FilterValue) => {
+        if (value === undefined) {
+          return;
+        }
 
-      if (_isString(value) && value.length === 0) {
-        return;
-      }
+        if (_isString(value) && value.length === 0) {
+          return;
+        }
 
-      if (_isArray(value) && value.length === 0) {
-        return;
-      }
+        if (_isArray(value) && value.length === 0) {
+          return;
+        }
 
-      return value;
-    },
-  });
+        return value;
+      },
+    });
 
-  const currentUrl = window.location.href;
+    const currentUrl = window.location.href;
 
-  // Remove the search parameters by creating a new URL object
-  const newUrl = new URL(currentUrl);
+    // Remove the search parameters by creating a new URL object
+    const newUrl = new URL(currentUrl);
 
-  // Clear the search part of the URL
-  newUrl.search = urlFiltersStringified;
+    // Clear the search part of the URL
+    newUrl.search = urlFiltersStringified;
 
-  window.history.replaceState(null, "", newUrl);
+    window.history.replaceState(null, "", newUrl);
+  }
 }
 
 function getQueryFiltersFromUrl(): ParsedQs {
