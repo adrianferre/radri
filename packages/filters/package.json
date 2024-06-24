@@ -1,6 +1,6 @@
 {
   "name": "@radri/filters",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A react component to user URL params filters and persist in Local Storage",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -33,9 +33,16 @@
   },
   "keywords": [
     "react",
+    "react-dom",
+    "query",
+    "query-params",
     "url",
     "filters",
-    "local-storage"
+    "local-storage",
+    "hooks",
+    "provider",
+    "filters-provider",
+    "use-filters"
   ],
   "license": "MIT",
   "homepage": "https://github.com/adrianferre/radri/blob/main/packages/filters/README.md",
