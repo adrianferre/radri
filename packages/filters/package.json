@@ -2,8 +2,10 @@
   "name": "@radri/filters",
   "version": "0.0.0",
   "description": "A react component to user URL params filters and persist in Local Storage",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Adrián Ferré (adrian_c4@hotmail.com)",
