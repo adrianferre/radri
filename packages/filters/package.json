@@ -1,6 +1,6 @@
 {
   "name": "@radri/filters",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "A react component to user URL params filters and persist in Local Storage",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -23,5 +23,8 @@
   },
   "peerDependencies": {
     "react": ">=17"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
