@@ -26,5 +26,23 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adrianferre/radri/tree/main/packages/filters"
+  },
+  "keywords": [
+    "react",
+    "url",
+    "filters",
+    "local-storage"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/adrianferre/radri/blob/main/packages/filters/README.md",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ]
 }
