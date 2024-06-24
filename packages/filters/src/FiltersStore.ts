@@ -185,6 +185,8 @@ const persistentStorage = ({
   },
 });
 
+export type CreateFiltersStore = Mutate<StoreApi<FiltersStore>, []>;
+
 export const createFiltersStore = ({
   initialFilters,
   filtersOptions,
@@ -195,7 +197,7 @@ export const createFiltersStore = ({
   setQueryFilters,
 }: NonNullableProperties<
   Omit<NonNullable<FiltersProviderProps>, "children">
->): FiltersStoreApi =>
+>): CreateFiltersStore =>
   createStore<FiltersStore>()(
     persist(
       immer((set) => ({

@@ -1,9 +1,5 @@
 import { useRef, useMemo, useCallback, useSyncExternalStore } from "react";
-import {
-  type StoreApi,
-  type Mutate,
-  type StoreMutatorIdentifier,
-} from "zustand";
+import type { StoreApi, Mutate } from "zustand";
 import { shallow } from "zustand/shallow";
 
 type State = Record<string, unknown>;
@@ -15,25 +11,25 @@ type State = Record<string, unknown>;
  * @returns - The store object with a proxy to to only re-render when the used keys change.
  */
 export function useProxyStore<
-  S extends State,
-  Mos extends [StoreMutatorIdentifier, unknown][] = [],
+  S extends Record<string, unknown>,
+  C extends Mutate<StoreApi<S>, []> = Mutate<StoreApi<S>, []>,
 >(
-  store: Mutate<StoreApi<S>, Mos>,
-  equalityFn: (a: unknown, b: unknown) => boolean = shallow,
-): Mutate<StoreApi<S>, Mos> {
-  const usedKeyRef = useRef<string[]>([]);
+  store: C,
+  equalityFn: (a: unknown, b: unknown) => boolean = shallow
+): { [K in keyof S]: S[K] } {
+  const usedKeyRef = useRef<(keyof State)[]>([]);
 
   const handler = useMemo(
     () => ({
-      get(target: Mutate<StoreApi<S>, Mos>, prop: string): unknown {
+      get(_: S, prop: string) {
         usedKeyRef.current.push(prop);
-        return target.getState()[prop];
+        return store.getState()[prop];
       },
     }),
-    [],
+    [store]
   );
 
-  const proxyRef = useRef(new Proxy(store, handler));
+  const proxyRef = useRef(new Proxy(store.getState(), handler));
 
   const subscribe = useCallback(
     (callback: () => void) =>
@@ -42,19 +38,19 @@ export function useProxyStore<
           for (const prop of usedKeyRef.current) {
             // If the value changed, create a new proxy and call the callback to re-render and return the new proxy.
             if (!equalityFn(prevState[prop], state[prop])) {
-              proxyRef.current = new Proxy(store, handler);
+              proxyRef.current = new Proxy(store.getState(), handler);
               callback();
               break;
             }
           }
         }
       }),
-    [store, equalityFn, handler],
+    [store, equalityFn, handler]
   );
 
   return useSyncExternalStore(
     subscribe,
     () => proxyRef.current,
-    () => proxyRef.current,
+    () => proxyRef.current
   );
 }

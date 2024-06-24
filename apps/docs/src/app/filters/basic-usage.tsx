@@ -1,44 +1,94 @@
 "use client";
 
 import { memo, type ReactNode } from "react";
-import { FiltersProvider, useFilter } from "@radri/filters";
+import { FiltersProvider, useFilter, useFilters } from "@radri/filters";
+import { animalsTypes, animals } from "./data";
 
-const SearchFilter = memo(() => {
-  const [search, setSearch] = useFilter("search");
+const SearchAnimalNameFilter = memo(() => {
+  const [animalName, setAnimalName] = useFilter("animalName");
 
   return (
     <div>
       <input
-        className="text-black"
+        className="text-black placeholder:text-black/40 border border-blue-600 px-2 text-sm rounded"
         onChange={(e) => {
-          setSearch(e.target.value);
+          setAnimalName(e.target.value);
         }}
-        value={search}
+        placeholder="Write an animal name"
+        value={animalName}
       />
     </div>
   );
 });
 
-SearchFilter.displayName = "SearchFilter";
+SearchAnimalNameFilter.displayName = "SearchAnimalNameFilter";
+
+const SelectAnimalTypeFilter = memo(() => {
+  const [animalType, setAnimalType] = useFilter("animalType");
+
+  return (
+    <div>
+      <select
+        className="text-black border border-blue-600 text-sm rounded capitalize"
+        onChange={(e) => {
+          setAnimalType(e.target.value);
+        }}
+        value={animalType}
+      >
+        {animalsTypes.map((type) => (
+          <option className="capitalize" key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+});
+
+SelectAnimalTypeFilter.displayName = "SelectAnimalTypeFilter";
 
 const Filters = memo(({ children }: { children: ReactNode }) => (
-  <div>{children}</div>
+  <div className="flex gap-2">{children}</div>
 ));
 
 Filters.displayName = "Filters";
+
+const AnimalsList = memo(() => {
+  const { filters } = useFilters();
+
+  return (
+    <div>
+      {animals
+        .filter(
+          ({ type, name }) =>
+            type === filters.animalType &&
+            (!filters.animalName ||
+              name.toUpperCase().includes(filters.animalName.toUpperCase()))
+        )
+        .map(({ id, type, name }) => (
+          <div key={id}>{`${type}: ${name}`}</div>
+        ))}
+    </div>
+  );
+});
+
+AnimalsList.displayName = "AnimalsList";
 
 export function BasicUsage(): JSX.Element {
   return (
     <FiltersProvider
       initialFilters={{
-        search: "",
-        otherParam: "",
+        animalName: "",
+        animalType: "bear",
       }}
+      keepOtherQueryParams={false}
     >
       <div>
         <Filters>
-          <SearchFilter />
+          <SelectAnimalTypeFilter />
+          <SearchAnimalNameFilter />
         </Filters>
+        <AnimalsList />
       </div>
     </FiltersProvider>
   );

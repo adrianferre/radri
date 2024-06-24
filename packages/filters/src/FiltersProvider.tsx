@@ -10,22 +10,19 @@ import {
   useRef,
 } from "react";
 import { isString as _isString, isArray as _isArray } from "lodash-es";
-import { type Mutate } from "zustand";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { parse, stringify, type ParsedQs } from "qs";
 import {
-  type FiltersStoreApi,
   type FiltersStore,
+  type CreateFiltersStore,
   createFiltersStore,
 } from "./FiltersStore";
 import { useProxyStore } from "./useProxyStore";
 
-export const FiltersContext = createContext<FiltersStoreApi | null>(null);
-
 export type FilterKey = string;
 
-export type FilterValue = undefined | string | string[] | ParsedQs | ParsedQs[];
+export type FilterValue = unknown;
 
 export type Filters = Record<FilterKey, FilterValue>;
 
@@ -65,7 +62,7 @@ export type FiltersProviderProps = {
    * If a value is not present in the initial values it' will be ignored.
    * @defaultValue \{\}
    */
-  initialFilters?: Filters;
+  initialFilters: Filters;
   /**
    * Options for each filter key to control how the filter will be handled.
    * @defaultValue \{
@@ -155,17 +152,19 @@ function getQueryFiltersFromUrl(): ParsedQs {
   return {};
 }
 
+export const FiltersContext = createContext<CreateFiltersStore | null>(null);
+
 export function FiltersProvider({
-  initialFilters = {},
+  initialFilters,
+  children,
   filtersOptions = {},
   keepOtherQueryParams = true,
   localStorageKey = "__DEFAULT_LS_FILTERS_KEY__",
   persistDebounce = 300,
   getQueryFilters = getQueryFiltersFromUrl,
   setQueryFilters = setQueryFiltersToUrl,
-  children,
 }: FiltersProviderProps): JSX.Element {
-  const filtersStoreRef = useRef<FiltersStoreApi>();
+  const filtersStoreRef = useRef<CreateFiltersStore>();
 
   if (!filtersStoreRef.current) {
     filtersStoreRef.current = createFiltersStore({
@@ -186,7 +185,7 @@ export function FiltersProvider({
   );
 }
 
-function useFiltersStoreApi(): FiltersStoreApi {
+function useFiltersStoreApi(): CreateFiltersStore {
   const store = useContext(FiltersContext);
 
   if (!store) throw new Error("Missing FiltersProvider in the tree");
@@ -198,10 +197,10 @@ function useFiltersStoreApi(): FiltersStoreApi {
  * This hook is used to access the filters store, and the update methods.
  * @returns The store object with a proxy to to only re-render when the used keys change.
  */
-export function useFilters(): Mutate<FiltersStoreApi, []> {
+export function useFilters(): { [K in keyof FiltersStore]: FiltersStore[K] } {
   const store = useFiltersStoreApi();
 
-  return useProxyStore(store, shallow);
+  return useProxyStore(store);
 }
 
 export function useFilter<V extends FilterValue = string>(
