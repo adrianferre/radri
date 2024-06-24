@@ -9,13 +9,7 @@ import {
   isArray as _isArray,
   debounce as _debounce,
 } from "lodash-es";
-import { stringify, parse } from "qs";
-import type {
-  ParsedQs,
-  IParseOptions,
-  IStringifyOptions,
-  BooleanOptional,
-} from "qs";
+import type { ParsedQs } from "qs";
 import { createStore, type StoreApi, type Mutate } from "zustand";
 import {
   persist,
@@ -35,21 +29,9 @@ type NonNullableProperties<T> = {
   [K in keyof T]-?: NonNullable<T[K]>;
 };
 
-function getUrlFilters(): ParsedQs {
-  if (typeof window !== "undefined") {
-    return parse(window.location.search, {
-      allowDots: true,
-      comma: true,
-      ignoreQueryPrefix: true,
-    });
-  }
-
-  return {};
-}
-
 type FiltersStoreState = {
   filters: Filters;
-  _subscribedUrlFiltersKeys: (keyof Filters)[];
+  _subscribedFiltersKeysToQuery: (keyof Filters)[];
 };
 
 type FiltersStoreAction = {
@@ -57,8 +39,8 @@ type FiltersStoreAction = {
   setFilters: (filters: Filters) => void;
   resetFilter: (filterKey: FilterKey) => void;
   resetFilters: () => void;
-  _subscribeUrlFiltersKey: (key: keyof Filters) => void;
-  _unSubscribeUrlFiltersKey: (key: keyof Filters) => void;
+  _subscribeFiltersKeyToQuery: (key: keyof Filters) => void;
+  _unSubscribeFiltersKeyToQuery: (key: keyof Filters) => void;
 };
 
 export type FiltersStore = Mutate<FiltersStoreState & FiltersStoreAction, []>;
@@ -67,45 +49,50 @@ export type FiltersStoreApi = StoreApi<FiltersStore>;
 type PersistentStorage = {
   initialFilters: Filters;
   filtersOptions: FiltersOptions;
-  options?: {
-    keepOtherQueryParams?: boolean;
-    persistDebounce?: number;
-    parseOptions?: IParseOptions<BooleanOptional>;
-    stringifyOptions?: IStringifyOptions<BooleanOptional>;
+  options: {
+    keepOtherQueryParams: boolean;
+    persistDebounce: number;
+    getQueryFilters: () => ParsedQs;
+    setQueryFilters: (filters: Filters) => void;
   };
 };
 
 const persistentStorage = ({
   initialFilters,
   filtersOptions,
-  options: { keepOtherQueryParams, persistDebounce } = {},
+  options: {
+    keepOtherQueryParams,
+    persistDebounce,
+    getQueryFilters,
+    setQueryFilters,
+  },
 }: PersistentStorage): PersistStorage<FiltersStoreState> => ({
   getItem: (localStorageKey) => {
-    const urlFilters = getUrlFilters();
-    // We only want to keep the filters that are in the initialFilters, but we want to keep other params in the URL like spoof.
+    const queryFilters = getQueryFilters();
+
     try {
       const localStorageFilters =
         typeof localStorage !== "undefined"
           ? (JSON.parse(
-              localStorage.getItem(localStorageKey) ?? "{}",
+              localStorage.getItem(localStorageKey) ?? "{}"
             ) as Filters)
           : ({} as Filters);
 
       const mergedFilters = Object.keys(initialFilters).reduce<Filters>(
         (acc, key) => {
-          const urlFilterValue = urlFilters[key];
+          const queryFilterValue = queryFilters[key];
           const localStorageFilterValue = localStorageFilters[key];
           const filterOptions = {
-            getInitialValueFromUrl: true,
+            getInitialValueFromQuery: true,
             getInitialValueFromLocalStorage: true,
             ...filtersOptions[key],
           };
 
           if (
-            filterOptions.getInitialValueFromUrl &&
-            urlFilterValue !== undefined
+            filterOptions.getInitialValueFromQuery &&
+            queryFilterValue !== undefined
           ) {
-            acc[key] = urlFilterValue;
+            acc[key] = queryFilterValue;
           } else if (
             filterOptions.getInitialValueFromLocalStorage &&
             localStorageFilterValue !== undefined
@@ -117,13 +104,13 @@ const persistentStorage = ({
 
           return acc;
         },
-        {},
+        {}
       );
 
       return {
         state: {
           filters: mergedFilters,
-          _subscribedUrlFiltersKeys: [],
+          _subscribedFiltersKeysToQuery: [],
         },
       };
     } catch (e) {
@@ -133,15 +120,15 @@ const persistentStorage = ({
   // The debounce is to avoid setting the localStorage and the location.search too often
   setItem: _debounce(
     (localStorageKey: string, newState: StorageValue<FiltersStoreState>) => {
-      const { localStorageFilters, newUrlFilter } = Object.keys(
-        initialFilters,
+      const { localStorageFilters, newQueryFilters } = Object.keys(
+        initialFilters
       ).reduce<{
         localStorageFilters: Filters;
-        newUrlFilter: Filters;
+        newQueryFilters: Filters;
       }>(
         (acc, key) => {
           const filterOptions = {
-            setValueToUrl: true,
+            setValueToQuery: true,
             setValueToLocalStorage: true,
             ...filtersOptions[key],
           };
@@ -151,18 +138,18 @@ const persistentStorage = ({
           }
 
           if (
-            filterOptions.setValueToUrl &&
-            newState.state._subscribedUrlFiltersKeys.includes(key)
+            filterOptions.setValueToQuery &&
+            newState.state._subscribedFiltersKeysToQuery.includes(key)
           ) {
-            acc.newUrlFilter[key] = newState.state.filters[key];
+            acc.newQueryFilters[key] = newState.state.filters[key];
           }
 
           return acc;
         },
         {
           localStorageFilters: {},
-          newUrlFilter: {},
-        },
+          newQueryFilters: {},
+        }
       );
 
       if (
@@ -170,7 +157,7 @@ const persistentStorage = ({
         Object.keys(localStorageFilters).length
       ) {
         try {
-          // We only want to save in the LS the filters that are in the initialFilters, to not add the garbage from the URL like spoof.
+          // We only want to save in the LS the filters that are in the initialFilters, to not add the garbage from the query params.
           const filters = JSON.stringify(localStorageFilters);
           localStorage.setItem(localStorageKey, filters);
         } catch (e) {
@@ -180,48 +167,15 @@ const persistentStorage = ({
       }
 
       if (typeof window !== "undefined") {
-        const urlFilters = keepOtherQueryParams ? getUrlFilters() : {};
+        const queryFilters = keepOtherQueryParams ? getQueryFilters() : {};
 
-        const urlFiltersStringified = stringify(
-          {
-            ...urlFilters,
-            ...newUrlFilter,
-          },
-          {
-            encode: false,
-            allowDots: true,
-            arrayFormat: "comma",
-            addQueryPrefix: true,
-            filter: (_, value: FilterValue) => {
-              if (value === undefined) {
-                return;
-              }
-
-              if (_isString(value) && value.length === 0) {
-                return;
-              }
-
-              if (_isArray(value) && value.length === 0) {
-                return;
-              }
-
-              return value;
-            },
-          },
-        );
-
-        const currentUrl = window.location.href;
-
-        // Remove the search parameters by creating a new URL object
-        const newUrl = new URL(currentUrl);
-
-        // Clear the search part of the URL
-        newUrl.search = urlFiltersStringified;
-
-        window.history.replaceState(null, "", newUrl);
+        setQueryFilters({
+          ...queryFilters,
+          ...newQueryFilters,
+        });
       }
     },
-    persistDebounce,
+    persistDebounce
   ),
   removeItem: (localStorageKey) => {
     try {
@@ -239,6 +193,8 @@ export const createFiltersStore = ({
   keepOtherQueryParams,
   localStorageKey,
   persistDebounce,
+  getQueryFilters,
+  setQueryFilters,
 }: NonNullableProperties<
   Omit<NonNullable<FiltersProviderProps>, "children">
 >): FiltersStoreApi =>
@@ -252,7 +208,7 @@ export const createFiltersStore = ({
             if (!(filterKey in draftState.filters)) {
               // eslint-disable-next-line no-console -- We want to log the warning in the console but we don't want to throw an error because it's not critical.
               console.warn(
-                `The "${filterKey.toString()}" key you are trying to update is not be defined in the initialValues, so it is skipped.`,
+                `The "${filterKey.toString()}" key you are trying to update is not be defined in the initialValues, so it is skipped.`
               );
             } else {
               _set(draftState.filters, filterKey, value);
@@ -265,7 +221,7 @@ export const createFiltersStore = ({
               if (!(filterKey in draftState.filters)) {
                 // eslint-disable-next-line no-console -- We want to log the warning in the console but we don't want to throw an error because it's not critical.
                 console.warn(
-                  `The "${filterKey.toString()}" key you are trying to update is not be defined in the initialValues, so it is skipped.`,
+                  `The "${filterKey.toString()}" key you are trying to update is not be defined in the initialValues, so it is skipped.`
                 );
               } else {
                 _set(draftState.filters, filterKey, value);
@@ -280,13 +236,13 @@ export const createFiltersStore = ({
             if (!(filterKey in draftState.filters)) {
               // eslint-disable-next-line no-console -- We want to log the warning in the console but we don't want to throw an error because it's not critical.
               console.warn(
-                `The "${filterKey.toString()}" key you are trying to reset is not be defined in the initialValues, so it is skipped.`,
+                `The "${filterKey.toString()}" key you are trying to reset is not be defined in the initialValues, so it is skipped.`
               );
             } else {
               _set(
                 draftState.filters,
                 filterKey,
-                _get(initialFilters, filterKey),
+                _get(initialFilters, filterKey)
               );
             }
 
@@ -299,19 +255,19 @@ export const createFiltersStore = ({
           });
         },
         // Private methods
-        _subscribedUrlFiltersKeys: [] as (keyof Filters)[],
-        _subscribeUrlFiltersKey: (key) => {
+        _subscribedFiltersKeysToQuery: [] as (keyof Filters)[],
+        _subscribeFiltersKeyToQuery: (key) => {
           set((draftState) => {
-            if (!draftState._subscribedUrlFiltersKeys.includes(key)) {
-              draftState._subscribedUrlFiltersKeys.push(key);
+            if (!draftState._subscribedFiltersKeysToQuery.includes(key)) {
+              draftState._subscribedFiltersKeysToQuery.push(key);
             }
           });
         },
-        _unSubscribeUrlFiltersKey: (key) => {
+        _unSubscribeFiltersKeyToQuery: (key) => {
           set((draftState) => {
-            const index = draftState._subscribedUrlFiltersKeys.indexOf(key);
+            const index = draftState._subscribedFiltersKeysToQuery.indexOf(key);
             if (index !== -1) {
-              draftState._subscribedUrlFiltersKeys.splice(index, 1);
+              draftState._subscribedFiltersKeysToQuery.splice(index, 1);
             }
           });
         },
@@ -321,8 +277,13 @@ export const createFiltersStore = ({
         storage: persistentStorage({
           initialFilters,
           filtersOptions,
-          options: { keepOtherQueryParams, persistDebounce },
+          options: {
+            keepOtherQueryParams,
+            persistDebounce,
+            getQueryFilters,
+            setQueryFilters,
+          },
         }),
-      },
-    ),
+      }
+    )
   );
