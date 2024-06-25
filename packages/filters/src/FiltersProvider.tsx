@@ -9,53 +9,54 @@ import {
   useLayoutEffect,
   useRef,
 } from "react";
-import { isString as _isString, isArray as _isArray } from "lodash-es";
+import {
+  isString as _isString,
+  isArray as _isArray,
+  isObject as _isObject,
+} from "lodash-es";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
-import { parse, stringify, type ParsedQs } from "qs";
+import { parse, stringify } from "qs";
 import {
-  type FiltersStore,
   type CreateFiltersStore,
+  type FiltersStoreType,
+  type FiltersType,
   createFiltersStore,
 } from "./FiltersStore";
 import { useProxyStore } from "./useProxyStore";
 
-export type FilterKey = string;
-
-export type FilterValue = unknown;
-
-export type Filters = Record<FilterKey, FilterValue>;
-
 /**
  * Options for each filter to control how the filter will be handled.
  */
-export type FiltersOptions = Record<
-  FilterKey,
-  {
-    /**
-     * If true, the filter key will be initialized with the value from the query if exists.
-     * @defaultValue true
-     * */
-    getInitialValueFromQuery?: boolean;
-    /**
-     * If true, the filter key will be initialized with the value from the localStorage if exists.
-     * @defaultValue true
-     * */
-    getInitialValueFromLocalStorage?: boolean;
-    /**
-     * If true, the filter key will be persisted in the query.
-     * @defaultValue true
-     * */
-    setValueToQuery?: boolean;
-    /**
-     * If true, the filter key will be set in the localStorage.
-     * @defaultValue true
-     * */
-    setValueToLocalStorage?: boolean;
-  }
+export type FiltersOptions<Filters extends FiltersType> = Partial<
+  Record<
+    keyof Filters,
+    {
+      /**
+       * If true, the filter key will be initialized with the value from the query if exists.
+       * @defaultValue true
+       * */
+      getInitialValueFromQuery?: boolean;
+      /**
+       * If true, the filter key will be initialized with the value from the localStorage if exists.
+       * @defaultValue true
+       * */
+      getInitialValueFromLocalStorage?: boolean;
+      /**
+       * If true, the filter key will be persisted in the query.
+       * @defaultValue true
+       * */
+      setValueToQuery?: boolean;
+      /**
+       * If true, the filter key will be set in the localStorage.
+       * @defaultValue true
+       * */
+      setValueToLocalStorage?: boolean;
+    }
+  >
 >;
 
-export type FiltersProviderProps = {
+export type FiltersProviderProps<Filters extends FiltersType> = {
   /**
    * Initial filters that will be used to initialize the filters (If no getInitialValueFromQuery or getInitialValueFromLocalStorage is set)
    * or reset them by calling the resetFilter or resetFilters methods.
@@ -72,7 +73,7 @@ export type FiltersProviderProps = {
    *  setValueToLocalStorage: true
    * \}
    */
-  filtersOptions?: FiltersOptions;
+  filtersOptions?: FiltersOptions<Filters>;
   /**
    * If true the other query params are going to be keep and merged with the ones specified in the initialValues.
    * @defaultValue true
@@ -96,7 +97,7 @@ export type FiltersProviderProps = {
    * With this function you can customize how you are going to retrieve the query params.
    * defaultValue: getQueryFiltersFromUrl
    * */
-  getQueryFilters?: () => ParsedQs;
+  getQueryFilters?: () => Partial<Filters>;
   /**
    * With this function you can customize how you are going to update the query params.
    * defaultValue: setQueryFiltersToUrl
@@ -104,23 +105,22 @@ export type FiltersProviderProps = {
   setQueryFilters?: (filters: Filters) => void;
 };
 
-function setQueryFiltersToUrl(filters: Filters): void {
+function setQueryFiltersToUrl<Filters extends FiltersType>(
+  filters: Filters
+): void {
   if (typeof window !== "undefined") {
     const urlFiltersStringified = stringify(filters, {
-      encode: false,
-      allowDots: true,
-      arrayFormat: "comma",
       addQueryPrefix: true,
-      filter: (_, value: FilterValue) => {
-        if (value === undefined) {
-          return;
-        }
-
+      filter: (_, value: unknown) => {
         if (_isString(value) && value.length === 0) {
           return;
         }
 
         if (_isArray(value) && value.length === 0) {
+          return;
+        }
+
+        if (_isObject(value) && Object.keys(value).length === 0) {
           return;
         }
 
@@ -140,31 +140,33 @@ function setQueryFiltersToUrl(filters: Filters): void {
   }
 }
 
-function getQueryFiltersFromUrl(): ParsedQs {
+function getQueryFiltersFromUrl<
+  Filters extends FiltersType,
+>(): Partial<Filters> {
   if (typeof window !== "undefined") {
     return parse(window.location.search, {
-      allowDots: true,
-      comma: true,
       ignoreQueryPrefix: true,
-    });
+    }) as Partial<Filters>;
   }
 
   return {};
 }
 
-export const FiltersContext = createContext<CreateFiltersStore | null>(null);
+export const FiltersContext = createContext<unknown>(null);
 
-export function FiltersProvider({
+FiltersContext.displayName = "FiltersContext";
+
+export function FiltersProvider<Filters extends FiltersType>({
   initialFilters,
   children,
   filtersOptions = {},
   keepOtherQueryParams = true,
   localStorageKey = "__DEFAULT_LS_FILTERS_KEY__",
   persistDebounce = 300,
-  getQueryFilters = getQueryFiltersFromUrl,
+  getQueryFilters = getQueryFiltersFromUrl<Filters>,
   setQueryFilters = setQueryFiltersToUrl,
-}: FiltersProviderProps): JSX.Element {
-  const filtersStoreRef = useRef<CreateFiltersStore>();
+}: FiltersProviderProps<Filters>): JSX.Element {
+  const filtersStoreRef = useRef<CreateFiltersStore<Filters>>();
 
   if (!filtersStoreRef.current) {
     filtersStoreRef.current = createFiltersStore({
@@ -179,33 +181,41 @@ export function FiltersProvider({
   }
 
   return (
-    <FiltersContext.Provider value={filtersStoreRef.current}>
+    <FiltersContext.Provider
+      value={filtersStoreRef.current as unknown as CreateFiltersStore<Filters>}
+    >
       {children}
     </FiltersContext.Provider>
   );
 }
 
-function useFiltersStoreApi(): CreateFiltersStore {
+function useFiltersStoreApi<
+  Filters extends FiltersType,
+>(): CreateFiltersStore<Filters> {
   const store = useContext(FiltersContext);
 
   if (!store) throw new Error("Missing FiltersProvider in the tree");
 
-  return store;
+  return store as CreateFiltersStore<Filters>;
 }
 
 /**
  * This hook is used to access the filters store, and the update methods.
  * @returns The store object with a proxy to to only re-render when the used keys change.
  */
-export function useFilters(): { [K in keyof FiltersStore]: FiltersStore[K] } {
-  const store = useFiltersStoreApi();
+export function useFilters<Filters extends FiltersType>(): {
+  [K in keyof FiltersStoreType<Filters>]: FiltersStoreType<Filters>[K];
+} {
+  const store = useFiltersStoreApi<Filters>();
 
   return useProxyStore(store);
 }
 
-export function useFilter<V extends FilterValue = string>(
-  filterKey: FilterKey
-): [V, (value: V) => void, () => void] {
+type FilterValue<Filters> = Filters[keyof Filters];
+
+export function useFilter<Filters extends FiltersType>(
+  filterKey: string
+): [FilterValue<Filters>, (value: FilterValue<Filters>) => void, () => void] {
   const store = useFiltersStoreApi();
 
   useLayoutEffect(() => {
@@ -224,12 +234,12 @@ export function useFilter<V extends FilterValue = string>(
   }, [filterKey, store]);
 
   const selector = useCallback(
-    (state: FiltersStore) => state.filters[filterKey],
+    (state: FiltersStoreType<FiltersType>) => state.filters[filterKey],
     [filterKey]
   );
 
   const handleChangeFilter = useCallback(
-    (value: V) => {
+    (value: FilterValue<Filters>) => {
       store.getState().setFilter(filterKey, value);
     },
     [filterKey, store]
@@ -239,7 +249,11 @@ export function useFilter<V extends FilterValue = string>(
     store.getState().resetFilter(filterKey);
   }, [filterKey, store]);
 
-  const filterValue = useStoreWithEqualityFn(store, selector, shallow) as V;
+  const filterValue = useStoreWithEqualityFn(
+    store,
+    selector,
+    shallow
+  ) as FilterValue<Filters>;
 
   return [filterValue, handleChangeFilter, handleResetFilter];
 }

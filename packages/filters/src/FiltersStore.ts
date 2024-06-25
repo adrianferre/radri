@@ -9,55 +9,53 @@ import {
   isArray as _isArray,
   debounce as _debounce,
 } from "lodash-es";
-import type { ParsedQs } from "qs";
-import { createStore, type StoreApi, type Mutate } from "zustand";
+import { createStore } from "zustand";
+import { type ParsedQs } from "qs";
 import {
   persist,
   type PersistStorage,
   type StorageValue,
 } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import type {
-  Filters,
-  FilterKey,
-  FilterValue,
-  FiltersOptions,
-  FiltersProviderProps,
-} from "./FiltersProvider";
+import type { FiltersOptions, FiltersProviderProps } from "./FiltersProvider";
+
+type FiltersValue = undefined | string | string[] | ParsedQs | ParsedQs[];
+
+export type FiltersType = Record<string, FiltersValue>;
 
 type NonNullableProperties<T> = {
   [K in keyof T]-?: NonNullable<T[K]>;
 };
 
-type FiltersStoreState = {
+type FiltersStoreState<Filters extends FiltersType> = {
   filters: Filters;
-  _subscribedFiltersKeysToQuery: (keyof Filters)[];
+  _subscribedFiltersKeysToQuery: string[];
 };
 
-type FiltersStoreAction = {
-  setFilter: (filterKey: FilterKey, value: FilterValue) => void;
+type FiltersStoreActions<Filters extends FiltersType> = {
+  setFilter: (filterKey: string, value: FiltersValue) => void;
   setFilters: (filters: Filters) => void;
-  resetFilter: (filterKey: FilterKey) => void;
+  resetFilter: (filterKey: string) => void;
   resetFilters: () => void;
-  _subscribeFiltersKeyToQuery: (key: keyof Filters) => void;
-  _unSubscribeFiltersKeyToQuery: (key: keyof Filters) => void;
+  _subscribeFiltersKeyToQuery: (key: string) => void;
+  _unSubscribeFiltersKeyToQuery: (key: string) => void;
 };
 
-export type FiltersStore = Mutate<FiltersStoreState & FiltersStoreAction, []>;
-export type FiltersStoreApi = StoreApi<FiltersStore>;
+export type FiltersStoreType<Filters extends FiltersType> =
+  FiltersStoreState<Filters> & FiltersStoreActions<Filters>;
 
-type PersistentStorage = {
+type PersistentStorage<Filters extends FiltersType> = {
   initialFilters: Filters;
-  filtersOptions: FiltersOptions;
+  filtersOptions: FiltersOptions<Filters>;
   options: {
     keepOtherQueryParams: boolean;
     persistDebounce: number;
-    getQueryFilters: () => ParsedQs;
+    getQueryFilters: () => Partial<Filters>;
     setQueryFilters: (filters: Filters) => void;
   };
 };
 
-const persistentStorage = ({
+const persistentStorage = <Filters extends FiltersType>({
   initialFilters,
   filtersOptions,
   options: {
@@ -66,22 +64,25 @@ const persistentStorage = ({
     getQueryFilters,
     setQueryFilters,
   },
-}: PersistentStorage): PersistStorage<FiltersStoreState> => ({
+}: PersistentStorage<Filters>): PersistStorage<FiltersStoreState<Filters>> => ({
   getItem: (localStorageKey) => {
     const queryFilters = getQueryFilters();
 
     try {
-      const localStorageFilters =
+      const localStorageFilters = (
         typeof localStorage !== "undefined"
-          ? (JSON.parse(
-              localStorage.getItem(localStorageKey) ?? "{}"
-            ) as Filters)
-          : ({} as Filters);
+          ? JSON.parse(localStorage.getItem(localStorageKey) ?? "{}")
+          : {}
+      ) as Partial<Filters>;
 
-      const mergedFilters = Object.keys(initialFilters).reduce<Filters>(
+      const mergedFilters = (
+        Object.keys(initialFilters) as (keyof Filters)[]
+      ).reduce<Filters>(
         (acc, key) => {
           const queryFilterValue = queryFilters[key];
+
           const localStorageFilterValue = localStorageFilters[key];
+
           const filterOptions = {
             getInitialValueFromQuery: true,
             getInitialValueFromLocalStorage: true,
@@ -104,7 +105,8 @@ const persistentStorage = ({
 
           return acc;
         },
-        {}
+        // eslint-disable-next-line @typescript-eslint/prefer-reduce-type-parameter -- We need because of https://typescript-eslint.io/rules/prefer-reduce-type-parameter/#when-not-to-use-it
+        {} as Filters
       );
 
       return {
@@ -117,11 +119,14 @@ const persistentStorage = ({
       return null;
     }
   },
-  // The debounce is to avoid setting the localStorage and the location.search too often
+  // The debounce is to avoid setting the localStorage and call setQueryFilters too often
   setItem: _debounce(
-    (localStorageKey: string, newState: StorageValue<FiltersStoreState>) => {
-      const { localStorageFilters, newQueryFilters } = Object.keys(
-        initialFilters
+    (
+      localStorageKey: string,
+      newState: StorageValue<FiltersStoreState<Filters>>
+    ) => {
+      const { localStorageFilters, newQueryFilters } = (
+        Object.keys(initialFilters) as (keyof Filters)[]
       ).reduce<{
         localStorageFilters: Filters;
         newQueryFilters: Filters;
@@ -139,7 +144,7 @@ const persistentStorage = ({
 
           if (
             filterOptions.setValueToQuery &&
-            newState.state._subscribedFiltersKeysToQuery.includes(key)
+            newState.state._subscribedFiltersKeysToQuery.includes(key as string)
           ) {
             acc.newQueryFilters[key] = newState.state.filters[key];
           }
@@ -147,8 +152,8 @@ const persistentStorage = ({
           return acc;
         },
         {
-          localStorageFilters: {},
-          newQueryFilters: {},
+          localStorageFilters: {} as Filters,
+          newQueryFilters: {} as Filters,
         }
       );
 
@@ -185,9 +190,11 @@ const persistentStorage = ({
   },
 });
 
-export type CreateFiltersStore = Mutate<StoreApi<FiltersStore>, []>;
+export type CreateFiltersStore<Filters extends FiltersType> = ReturnType<
+  typeof createFiltersStore<Filters>
+>;
 
-export const createFiltersStore = ({
+export const createFiltersStore = <Filters extends FiltersType>({
   initialFilters,
   filtersOptions,
   keepOtherQueryParams,
@@ -196,9 +203,9 @@ export const createFiltersStore = ({
   getQueryFilters,
   setQueryFilters,
 }: NonNullableProperties<
-  Omit<NonNullable<FiltersProviderProps>, "children">
->): CreateFiltersStore =>
-  createStore<FiltersStore>()(
+  Omit<NonNullable<FiltersProviderProps<Filters>>, "children">
+>) =>
+  createStore<FiltersStoreType<Filters>>()(
     persist(
       immer((set) => ({
         // Public methods
@@ -251,11 +258,11 @@ export const createFiltersStore = ({
         },
         resetFilters: () => {
           set((draftState) => {
-            draftState.filters = initialFilters;
+            _set(draftState, "filters", initialFilters);
           });
         },
         // Private methods
-        _subscribedFiltersKeysToQuery: [] as (keyof Filters)[],
+        _subscribedFiltersKeysToQuery: [],
         _subscribeFiltersKeyToQuery: (key) => {
           set((draftState) => {
             if (!draftState._subscribedFiltersKeysToQuery.includes(key)) {
@@ -274,7 +281,8 @@ export const createFiltersStore = ({
       })),
       {
         name: localStorageKey,
-        storage: persistentStorage({
+        // partialize: ({ filters }) => ({ filters }),
+        storage: persistentStorage<Filters>({
           initialFilters,
           filtersOptions,
           options: {

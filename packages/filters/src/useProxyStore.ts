@@ -2,7 +2,9 @@ import { useRef, useMemo, useCallback, useSyncExternalStore } from "react";
 import type { StoreApi, Mutate } from "zustand";
 import { shallow } from "zustand/shallow";
 
-type State = Record<string, unknown>;
+type StoreGenericType = Record<string, unknown>;
+
+type StorePick<S> = Pick<Mutate<StoreApi<S>, []>, "getState" | "subscribe">;
 
 /**
  * Generic hook to use a store with a proxy to only re-render when the used keys change
@@ -10,14 +12,11 @@ type State = Record<string, unknown>;
  * @defaultValue shallow @param equalityFn - The equality function to compare the values of the used keys.
  * @returns - The store object with a proxy to to only re-render when the used keys change.
  */
-export function useProxyStore<
-  S extends Record<string, unknown>,
-  C extends Mutate<StoreApi<S>, []> = Mutate<StoreApi<S>, []>,
->(
-  store: C,
+export function useProxyStore<S extends StoreGenericType>(
+  store: StorePick<S>,
   equalityFn: (a: unknown, b: unknown) => boolean = shallow
 ): { [K in keyof S]: S[K] } {
-  const usedKeyRef = useRef<(keyof State)[]>([]);
+  const usedKeyRef = useRef<(keyof S)[]>([]);
 
   const handler = useMemo(
     () => ({

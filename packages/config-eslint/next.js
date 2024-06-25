@@ -42,6 +42,7 @@ module.exports = {
   ignorePatterns: ["node_modules/", "dist/"],
   // add rules configurations here
   rules: {
+    "@typescript-eslint/consistent-type-definitions": ["error", "type"],
     "import/no-default-export": "off",
   },
 };

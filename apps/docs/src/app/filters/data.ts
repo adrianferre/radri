@@ -1,8 +1,8 @@
-import { faker } from "@faker-js/faker";
+import { faker, type AnimalModule } from "@faker-js/faker";
 
 faker.seed(1234);
 
-export const animalsTypes = [
+export const animalsTypes: (keyof AnimalModule)[] = [
   "bear",
   "bird",
   "cat",
@@ -31,11 +31,7 @@ export const animals = animalsTypes.reduce<
     ...Array.from({ length: 10 }, () => ({
       id: faker.string.uuid(),
       type: animalType,
-      name:
-        (animalType in faker.animal &&
-          typeof faker.animal[animalType] === "function" &&
-          faker.animal[animalType]?.()) ??
-        "",
+      name: faker.animal[animalType](),
     }))
   );
 

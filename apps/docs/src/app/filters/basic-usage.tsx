@@ -4,8 +4,13 @@ import { memo, type ReactNode } from "react";
 import { FiltersProvider, useFilter, useFilters } from "@radri/filters";
 import { animalsTypes, animals } from "./data";
 
+type FiltersType = {
+  animalName: string;
+  animalType: string;
+};
+
 const SearchAnimalNameFilter = memo(() => {
-  const [animalName, setAnimalName] = useFilter("animalName");
+  const [animalName, setAnimalName] = useFilter<FiltersType>("animalName");
 
   return (
     <div>
@@ -24,7 +29,7 @@ const SearchAnimalNameFilter = memo(() => {
 SearchAnimalNameFilter.displayName = "SearchAnimalNameFilter";
 
 const SelectAnimalTypeFilter = memo(() => {
-  const [animalType, setAnimalType] = useFilter("animalType");
+  const [animalType, setAnimalType] = useFilter<FiltersType>("animalType");
 
   return (
     <div>
@@ -54,7 +59,7 @@ const Filters = memo(({ children }: { children: ReactNode }) => (
 Filters.displayName = "Filters";
 
 const AnimalsList = memo(() => {
-  const { filters } = useFilters();
+  const { filters } = useFilters<FiltersType>();
 
   return (
     <div>
