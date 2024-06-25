@@ -1,5 +1,11 @@
 # @radri/filters
 
+## 1.0.2
+
+### Patch Changes
+
+- Fix the types of useFilters and useFilter hooks to receive a Filters type and return the proper type when called.
+
 ## 1.0.1
 
 ### Patch Changes

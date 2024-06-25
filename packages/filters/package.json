@@ -1,6 +1,6 @@
 {
   "name": "@radri/filters",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A react component to user URL params filters and persist in Local Storage",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

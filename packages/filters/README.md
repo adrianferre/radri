@@ -7,6 +7,7 @@
 3. Keep them in sync with the Local Storage so the users can load previous filters when navigating to a different page and share same filters in different pages.
 4. Persist in Local Storage and URL are done by using a debounce, so you don't loose animation frames when the filters change too fast.
 5. All the persist behavior is exposed thru configuration so you can easily change and adapt to different part of your application.
+6. Typescript support to avoid bugs.
 
 ## How to install
 
@@ -20,44 +21,99 @@ npm i @radri/filters
 "use client";
 
 import { memo, type ReactNode } from "react";
-import { FiltersProvider, useFilter } from "@radri/filters";
+import { FiltersProvider, useFilter, useFilters } from "@radri/filters";
+import { animalsTypes, animals } from "./data";
 
-const SearchFilter = memo(() => {
-  const [search, setSearch] = useFilter("search");
+type FiltersType = {
+  animalName: string;
+  animalType: string;
+};
+
+const SearchAnimalNameFilter = memo(() => {
+  const [animalName, setAnimalName] = useFilter<FiltersType>("animalName");
 
   return (
     <div>
       <input
-        className="text-black"
+        className="text-black placeholder:text-black/40 border border-blue-600 px-2 text-sm rounded"
         onChange={(e) => {
-          setSearch(e.target.value);
+          setAnimalName(e.target.value);
         }}
-        value={search}
+        placeholder="Write an animal name"
+        value={animalName}
       />
     </div>
   );
 });
 
-SearchFilter.displayName = "SearchFilter";
+SearchAnimalNameFilter.displayName = "SearchAnimalNameFilter";
+
+const SelectAnimalTypeFilter = memo(() => {
+  const [animalType, setAnimalType] = useFilter<FiltersType>("animalType");
+
+  return (
+    <div>
+      <select
+        className="text-black border border-blue-600 text-sm rounded capitalize"
+        onChange={(e) => {
+          setAnimalType(e.target.value);
+        }}
+        value={animalType}
+      >
+        {animalsTypes.map((type) => (
+          <option className="capitalize" key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+});
+
+SelectAnimalTypeFilter.displayName = "SelectAnimalTypeFilter";
 
 const Filters = memo(({ children }: { children: ReactNode }) => (
-  <div>{children}</div>
+  <div className="flex gap-2">{children}</div>
 ));
 
 Filters.displayName = "Filters";
+
+const AnimalsList = memo(() => {
+  const { filters } = useFilters<FiltersType>();
+
+  return (
+    <div>
+      {animals
+        .filter(
+          ({ type, name }) =>
+            type === filters.animalType &&
+            (!filters.animalName ||
+              name.toUpperCase().includes(filters.animalName.toUpperCase()))
+        )
+        .map(({ id, type, name }) => (
+          <div key={id}>{`${type}: ${name}`}</div>
+        ))}
+    </div>
+  );
+});
+
+AnimalsList.displayName = "AnimalsList";
 
 export function BasicUsage(): JSX.Element {
   return (
     <FiltersProvider
       initialFilters={{
-        search: "",
-        otherParam: "",
+        animalName: "",
+        animalType: "bear",
       }}
+      keepOtherQueryParams={false}
     >
       <div>
         <Filters>
-          <SearchFilter />
+          <SelectAnimalTypeFilter />
+          <SearchAnimalNameFilter />
         </Filters>
+        <AnimalsList />
       </div>
     </FiltersProvider>
   );
