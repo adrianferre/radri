@@ -1,5 +1,11 @@
 # @radri/filters
 
+## 1.0.3
+
+### Patch Changes
+
+- 9275270: Update README with a better example
+
 ## 1.0.2
 
 ### Patch Changes
