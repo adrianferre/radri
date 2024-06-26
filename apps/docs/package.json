@@ -12,7 +12,7 @@
   "dependencies": {
     "@markdoc/markdoc": "^0.4.0",
     "@markdoc/next.js": "^0.3.7",
-    "@radri/filters": "*",
+    "@radri/filters": "^1.0.3",
     "@radri/ui": "*",
     "next": "^14.2.3",
     "react": "^18.2.0",
